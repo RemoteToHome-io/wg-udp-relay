@@ -38,9 +38,9 @@ cp .env.example .env
 3. Edit `.env` with your configuration:
 ```bash
 # Example .env configuration
-LISTEN_PORTS=51820,51821,51822
-ENDPOINT_DDNS=vpn.yourdomain.com
-ENDPOINT_PORT=51820
+LISTEN_PORTS=51820,443
+ENDPOINT_DDNS=xxxxxxx.glddns.com
+ENDPOINT_PORT=58120
 ```
 
 4. Start the relay:
@@ -64,9 +64,9 @@ docker-compose down
 
 | Variable | Description | Example | Default |
 |----------|-------------|---------|---------|
-| `LISTEN_PORTS` | Comma-separated list of ports to listen on | `51820,51821,51822` | Required |
-| `ENDPOINT_DDNS` | Target WireGuard endpoint DDNS URL | `vpn.example.com` | Required |
-| `ENDPOINT_PORT` | Target WireGuard endpoint port | `51820` | Required |
+| `LISTEN_PORTS` | Comma-separated list of ports to listen on | `51820,443` | Required |
+| `ENDPOINT_DDNS` | Target WireGuard endpoint DDNS URL | `xxxxxxx.glddns.com` | Required |
+| `ENDPOINT_PORT` | Target WireGuard endpoint port | `58120` | Required |
 | `DNS_CHECK_INTERVAL` | How often to check for DNS changes | `5m`, `10m`, `1h` | `5m` |
 
 ### Docker Compose Configuration
@@ -75,6 +75,73 @@ The `docker-compose.yml` file uses `network_mode: host` to allow the container t
 - Bind to any port on the host machine
 - Access the host's network interfaces directly
 - Support dynamic port configuration
+
+## WireGuard Client Configuration
+
+To use the relay, you need to update your WireGuard client configuration to point to the relay server instead of connecting directly to your WireGuard endpoint.
+
+### Scenario
+
+- **Original WireGuard Server**: `xxxxxxx.glddns.com:58120`
+- **Relay VPS**: `relay-vps.example.com` (or VPS IP address)
+- **Relay Listen Port**: `443` (appears as HTTPS traffic to bypass restrictions)
+
+### Configuration Change
+
+**Before (Direct Connection):**
+```ini
+[Interface]
+PrivateKey = <your-private-key>
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = <server-public-key>
+Endpoint = xxxxxxx.glddns.com:58120
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+```
+
+**After (Through Relay):**
+```ini
+[Interface]
+PrivateKey = <your-private-key>
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = <server-public-key>
+Endpoint = relay-vps.example.com:443
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+```
+
+### What Changed?
+
+1. **Endpoint hostname**: Changed from `xxxxxxx.glddns.com` to `relay-vps.example.com` (your relay VPS)
+2. **Endpoint port**: Changed from `58120` to `443` (the port your relay is listening on)
+
+### Why This Works
+
+- The relay receives packets on port `443`
+- The relay forwards packets to `xxxxxxx.glddns.com:58120`
+- Responses are sent back through the relay to your client
+- All WireGuard encryption remains end-to-end
+- To firewalls and ISPs, it appears as HTTPS traffic on port `443`
+
+### Benefits
+
+- Bypass port restrictions (many networks allow port 443)
+- Bypass protocol restrictions (appears as HTTPS)
+- Maintain full WireGuard security
+- Automatic endpoint IP updates via DDNS monitoring
+
+### Important Notes
+
+- Keep the same `PublicKey`, `PrivateKey`, and `Address` values
+- Only change the `Endpoint` field
+- No changes needed on the WireGuard server itself
+- The relay is transparent to the WireGuard protocol
 
 ## Manual Installation
 

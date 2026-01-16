@@ -6,10 +6,12 @@ A lightweight, high-performance UDP relay server designed for WireGuard VPN traf
 
 - High-performance UDP packet relaying
 - Multiple port support - listen on multiple ports simultaneously
+- **Automatic DDNS monitoring** - detects IP changes and updates routing
 - Environment variable configuration via .env file
 - Docker Compose for easy deployment
 - Minimal overhead and latency
 - Connection tracking and timeout management
+- Graceful session migration on endpoint IP changes
 - IPv4 and IPv6 support
 - Host network mode for full port access
 
@@ -60,11 +62,12 @@ docker-compose down
 
 ### Environment Variables (.env file)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `LISTEN_PORTS` | Comma-separated list of ports to listen on | `51820,51821,51822` |
-| `ENDPOINT_DDNS` | Target WireGuard endpoint DDNS URL | `vpn.example.com` |
-| `ENDPOINT_PORT` | Target WireGuard endpoint port | `51820` |
+| Variable | Description | Example | Default |
+|----------|-------------|---------|---------|
+| `LISTEN_PORTS` | Comma-separated list of ports to listen on | `51820,51821,51822` | Required |
+| `ENDPOINT_DDNS` | Target WireGuard endpoint DDNS URL | `vpn.example.com` | Required |
+| `ENDPOINT_PORT` | Target WireGuard endpoint port | `51820` | Required |
+| `DNS_CHECK_INTERVAL` | How often to check for DNS changes | `5m`, `10m`, `1h` | `5m` |
 
 ### Docker Compose Configuration
 
@@ -104,6 +107,7 @@ export TARGET_ENDPOINT=wg.example.com:51820
 - `-target <address>` - Target WireGuard server address (or use `TARGET_ENDPOINT` env var)
 - `-timeout <duration>` - Connection idle timeout (default: `3m`)
 - `-buffer <size>` - UDP buffer size in bytes (default: `1500`)
+- `-dns-check <duration>` - DNS resolution check interval (or use `DNS_CHECK_INTERVAL` env var, default: `5m`)
 
 ## How It Works
 
@@ -116,6 +120,21 @@ The relay maintains a mapping of client addresses to maintain session state:
 5. Sessions expire after the configured timeout period
 
 Each listen port operates independently with its own session management.
+
+### DDNS Monitoring
+
+The relay automatically monitors the target endpoint's DNS record for IP changes:
+
+1. **Initial Resolution**: On startup, the DDNS hostname is resolved to an IP address
+2. **Periodic Checks**: Every `DNS_CHECK_INTERVAL` (default: 5 minutes), the relay re-resolves the hostname
+3. **Change Detection**: If the IP address has changed, the relay logs the change
+4. **Session Migration**: All active sessions are gracefully migrated to the new IP address
+   - Old connections are closed
+   - New connections are established to the new IP
+   - Session state is preserved
+   - No packet loss for active connections
+
+This ensures the relay continues working even when your DDNS endpoint IP changes, which is common with dynamic DNS services.
 
 ## Architecture
 
@@ -160,6 +179,13 @@ Client C:51822  -->  :51822 (listening) --> endpoint:51820
 - Verify ENDPOINT_DDNS resolves correctly: `nslookup <domain>`
 - Check that target endpoint is reachable: `nc -zvu <endpoint> <port>`
 - Review relay logs for error messages
+- Check for DNS change detection messages in logs
+
+### DNS not updating
+- Verify `DNS_CHECK_INTERVAL` is set appropriately in `.env`
+- Check logs for DNS resolution errors
+- Ensure the relay has network access to resolve DNS
+- Test manual resolution: `dig +short <domain>`
 
 ## Contributing
 

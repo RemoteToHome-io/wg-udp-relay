@@ -21,13 +21,15 @@ type ClientSession struct {
 
 // Relay manages UDP packet forwarding
 type Relay struct {
-	listenAddr  string
-	targetAddr  string
-	timeout     time.Duration
-	bufferSize  int
-	sessions    map[string]*ClientSession
-	sessionsMu  sync.RWMutex
-	targetConn  *net.UDPAddr
+	listenAddr      string
+	targetAddr      string
+	timeout         time.Duration
+	bufferSize      int
+	dnsCheckInterval time.Duration
+	sessions        map[string]*ClientSession
+	sessionsMu      sync.RWMutex
+	targetConn      *net.UDPAddr
+	targetConnMu    sync.RWMutex
 }
 
 func main() {
@@ -35,6 +37,7 @@ func main() {
 	targetAddr := flag.String("target", "", "Target WireGuard server address (required)")
 	timeout := flag.Duration("timeout", 3*time.Minute, "Connection idle timeout")
 	bufferSize := flag.Int("buffer", 1500, "UDP buffer size in bytes")
+	dnsCheckInterval := flag.Duration("dns-check", 5*time.Minute, "DNS resolution check interval")
 	
 	flag.Parse()
 
@@ -44,6 +47,13 @@ func main() {
 	}
 	if *targetAddr == "" {
 		*targetAddr = os.Getenv("TARGET_ENDPOINT")
+	}
+	if envInterval := os.Getenv("DNS_CHECK_INTERVAL"); envInterval != "" && *dnsCheckInterval == 5*time.Minute {
+		if parsed, err := time.ParseDuration(envInterval); err == nil {
+			*dnsCheckInterval = parsed
+		} else {
+			log.Printf("Warning: Invalid DNS_CHECK_INTERVAL '%s', using default 5m", envInterval)
+		}
 	}
 
 	if *targetAddr == "" {
@@ -67,11 +77,12 @@ func main() {
 		listenAddr := fmt.Sprintf(":%s", port)
 		
 		relay := &Relay{
-			listenAddr: listenAddr,
-			targetAddr: *targetAddr,
-			timeout:    *timeout,
-			bufferSize: *bufferSize,
-			sessions:   make(map[string]*ClientSession),
+			listenAddr:       listenAddr,
+			targetAddr:       *targetAddr,
+			timeout:          *timeout,
+			bufferSize:       *bufferSize,
+			dnsCheckInterval: *dnsCheckInterval,
+			sessions:         make(map[string]*ClientSession),
 		}
 
 		wg.Add(1)
@@ -94,7 +105,9 @@ func (r *Relay) Start() error {
 	if err != nil {
 		return err
 	}
+	r.targetConnMu.Lock()
 	r.targetConn = targetAddr
+	r.targetConnMu.Unlock()
 
 	// Create listening socket
 	listenConn, err := net.ListenPacket("udp", r.listenAddr)
@@ -103,8 +116,11 @@ func (r *Relay) Start() error {
 	}
 	defer listenConn.Close()
 
-	log.Printf("UDP relay started: %s -> %s", r.listenAddr, r.targetAddr)
-	log.Printf("Settings: timeout=%s, buffer=%d bytes", r.timeout, r.bufferSize)
+	log.Printf("UDP relay started: %s -> %s (%s)", r.listenAddr, r.targetAddr, targetAddr.IP.String())
+	log.Printf("Settings: timeout=%s, buffer=%d bytes, DNS check interval=%s", r.timeout, r.bufferSize, r.dnsCheckInterval)
+
+	// Start DNS monitoring goroutine
+	go r.monitorDNS()
 
 	// Start session cleanup goroutine
 	go r.cleanupSessions()
@@ -131,8 +147,13 @@ func (r *Relay) handleClientPacket(data []byte, clientAddr *net.UDPAddr) {
 	r.sessionsMu.Lock()
 	session, exists := r.sessions[clientKey]
 	if !exists {
+		// Get current target address
+		r.targetConnMu.RLock()
+		targetConn := r.targetConn
+		r.targetConnMu.RUnlock()
+
 		// Create new session
-		conn, err := net.DialUDP("udp", nil, r.targetConn)
+		conn, err := net.DialUDP("udp", nil, targetConn)
 		if err != nil {
 			log.Printf("Error creating connection for %s: %v", clientKey, err)
 			r.sessionsMu.Unlock()
@@ -233,5 +254,69 @@ func (r *Relay) cleanupSessions() {
 			session.mu.Unlock()
 		}
 		r.sessionsMu.Unlock()
+	}
+}
+
+// monitorDNS periodically checks for DNS changes and updates target address
+func (r *Relay) monitorDNS() {
+	ticker := time.NewTicker(r.dnsCheckInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// Resolve target address
+		newAddr, err := net.ResolveUDPAddr("udp", r.targetAddr)
+		if err != nil {
+			log.Printf("[%s] DNS resolution error for %s: %v", r.listenAddr, r.targetAddr, err)
+			continue
+		}
+
+		// Check if IP has changed
+		r.targetConnMu.RLock()
+		currentAddr := r.targetConn
+		r.targetConnMu.RUnlock()
+
+		if !currentAddr.IP.Equal(newAddr.IP) || currentAddr.Port != newAddr.Port {
+			log.Printf("[%s] DNS change detected: %s -> %s", r.listenAddr, currentAddr.IP.String(), newAddr.IP.String())
+			
+			// Update target address
+			r.targetConnMu.Lock()
+			r.targetConn = newAddr
+			r.targetConnMu.Unlock()
+
+			// Migrate all existing sessions to new target
+			r.migrateSessionsToNewTarget(newAddr)
+		}
+	}
+}
+
+// migrateSessionsToNewTarget recreates all session connections to point to new target
+func (r *Relay) migrateSessionsToNewTarget(newTarget *net.UDPAddr) {
+	r.sessionsMu.Lock()
+	defer r.sessionsMu.Unlock()
+
+	log.Printf("[%s] Migrating %d sessions to new target %s", r.listenAddr, len(r.sessions), newTarget.IP.String())
+
+	for clientKey, session := range r.sessions {
+		session.mu.Lock()
+
+		// Close old connection
+		oldConn := session.conn
+		oldConn.Close()
+
+		// Create new connection to new target
+		newConn, err := net.DialUDP("udp", nil, newTarget)
+		if err != nil {
+			log.Printf("[%s] Failed to migrate session %s: %v", r.listenAddr, clientKey, err)
+			// Remove failed session
+			delete(r.sessions, clientKey)
+			session.mu.Unlock()
+			continue
+		}
+
+		// Update session with new connection
+		session.conn = newConn
+		session.mu.Unlock()
+
+		log.Printf("[%s] Migrated session: %s", r.listenAddr, clientKey)
 	}
 }

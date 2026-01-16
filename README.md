@@ -82,6 +82,8 @@ docker-compose down
 | `ENDPOINT_PORT` | Target WireGuard endpoint port | `58120` | Required |
 | `DNS_CHECK_INTERVAL` | How often to check for DNS changes | `5m`, `10m`, `1h` | `5m` |
 
+**Important Note on DNS_CHECK_INTERVAL:** For glddns.com DDNS servers, it is not advised to set the check interval lower than 5 minutes to avoid excessive DNS queries and potential rate limiting.
+
 ### Docker Compose Configuration
 
 The `docker-compose.yml` file uses `network_mode: host` to allow the container to:

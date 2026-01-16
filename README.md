@@ -294,9 +294,7 @@ Client C:51822  -->  :51822 (listening) --> endpoint:51820
 
 ## Professional Support
 
-For professional assistance in deploying your own cloud relay for your self-hosted VPN setup, or using a managed relay through us, please contact **RemoteToHome Consulting**:
-
-[https://remotetohome.io/personal-support/](https://remotetohome.io/personal-support/)
+For professional assistance in deploying your own cloud relay for your self-hosted VPN setup, or using a managed relay through us, please contact [RemoteToHome Consulting](https://remotetohome.io/personal-support/).
 
 We offer expert consultation and deployment services for:
 - Self-hosted VPN solutions for remote work

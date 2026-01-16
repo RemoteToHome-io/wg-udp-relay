@@ -7,7 +7,7 @@ This type of relay does not have the ability to decrypt or modify the WireGuard 
 
 Transparcy:  The project code is AI assisted with manual review.  Given it has no access to private data or any portion of the tunnel data, the priority is quick development/ehancement and documentation.
 
-## To-do / Coming soon:
+## To-do / coming soon:
 - Anycast routing - explore adding Anycast support with Vultr or DigitalOcean
 - GeoDNS - Route clients to nearest relay based on location
 - Load balancing - Multiple relays behind DNS round-robin
@@ -298,7 +298,7 @@ For professional assistance in deploying your own cloud relay for your self-host
 We offer expert consultation and deployment services for:
 - Self-hosted VPN solutions for remote work
 - Custom cloud based VPN servers and relay configurations
-- Custom configurations of GL.iNet routers for self-hosted VPNs
+- Custom configuration and setup reviews of GL.iNet routers for self-hosted VPNs
 - High-availability VPN setups
 - VPN performance optimization
 

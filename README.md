@@ -4,11 +4,11 @@ A lightweight, high-performance UDP relay server designed for WireGuard VPN traf
 
 **Important security note:**
 
-This type of relay does not have the ability to decrypt or modify the WireGuard VPN tunnel traffic (it does not have access to the client/server decryption keys).  It simply allows you to "bounce" the tunnel via a public server to assit with international routing performance or bypass endpoint restrictions.  This relay also feature the ability to listen on mutiple ports, so you could send your VPN client traffic on ports such as 443/UDP to make it appears more like HTTPS/3 QUIC UDP traffic, which can help bypass port restrictions and some types of throttling on a remote travel network.
+This type of relay does not have the ability to decrypt or modify the WireGuard VPN tunnel traffic (it does not have access to the client/server decryption keys).  It simply allows you to "bounce" the tunnel via a public server to assist with international routing performance or bypass endpoint restrictions.  This relay also features the ability to listen on multiple ports, so you could send your VPN client traffic on ports such as 443/UDP to make it appear more like HTTPS/3 QUIC UDP traffic, which can help bypass port restrictions and some types of throttling on a remote travel network.
 
 **Transparency:**
 
-The project code is AI assisted with manual review.  Given it has no access to private data or any portion of the tunnel data, the priority is quick development/ehancement and documentation.
+The project code is AI assisted with manual review.  Given it has no access to private data or any portion of the tunnel data, the priority is quick development/enhancement and documentation.
 
 ## To-do / coming soon:
 - Anycast routing - explore adding Anycast support with Vultr or DigitalOcean

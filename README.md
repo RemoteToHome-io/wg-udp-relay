@@ -143,6 +143,29 @@ PersistentKeepalive = 25
 - No changes needed on the WireGuard server itself
 - The relay is transparent to the WireGuard protocol
 
+### MTU Considerations
+
+You may need to adjust the MTU in your WireGuard client configuration for optimal performance on restricted networks:
+
+```ini
+[Interface]
+PrivateKey = <your-private-key>
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+MTU = 1384  # Lower MTU for networks with restrictions
+```
+
+**Common MTU Values:**
+- `1420` - Standard WireGuard MTU (default)
+- `1384` - Recommended for traveling/restricted networks
+- `1280` - Minimum for IPv6 compatibility
+
+**Important**: The relay's UDP buffer size (default 1500 bytes) does **not** need to match your client's MTU setting. The relay buffer should remain at 1500 or higher because:
+- The relay receives already-encrypted WireGuard packets
+- It forwards packets without re-encapsulation or decryption
+- The buffer must be large enough to handle the complete packet including all headers
+- Client MTU controls packet size; relay buffer controls receive capacity
+
 ## Manual Installation
 
 ### From Source
@@ -173,8 +196,10 @@ export TARGET_ENDPOINT=wg.example.com:51820
 - `-ports <ports>` - Comma-separated list of ports to listen on (or use `LISTEN_PORTS` env var)
 - `-target <address>` - Target WireGuard server address (or use `TARGET_ENDPOINT` env var)
 - `-timeout <duration>` - Connection idle timeout (default: `3m`)
-- `-buffer <size>` - UDP buffer size in bytes (default: `1500`)
+- `-buffer <size>` - UDP buffer size in bytes (default: `1500`, recommended to keep at 1500 or higher)
 - `-dns-check <duration>` - DNS resolution check interval (or use `DNS_CHECK_INTERVAL` env var, default: `5m`)
+
+**Note on Buffer Size**: The relay buffer size should remain at 1500 bytes or higher regardless of your WireGuard client MTU settings. The buffer must accommodate the complete encrypted packet as received from the network, while client MTU only controls the size of packets created by WireGuard. See [MTU Considerations](#mtu-considerations) for details.
 
 ## How It Works
 

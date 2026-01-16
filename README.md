@@ -1,6 +1,8 @@
 # WireGuard UDP Relay
 
-A lightweight, high-performance UDP relay server designed for WireGuard VPN traffic. This tool helps route WireGuard packets through intermediate servers, useful for bypassing restrictive networks or optimizing routing paths.
+A lightweight, high-performance UDP relay server designed for WireGuard VPN traffic. This tool helps route WireGuard packets through intermediate servers, useful for bypassing restrictive networks or optimizing routing paths, especially from travel countries that may have poor international connection paths to your VPN server host country.
+
+Important note:  This type of relay does not have the ability to decrypt or modify the WireGuard VPN tunnel traffic (it does not have access to the client/server decryption keys).  It is simply allows you to "bounce" the tunnel through via a cloud server to assit with international routing performance or bypass endpoint restrictions.  This relay also feature the ability to listen on mutiple ports, so you could send your VPN client traffic on ports such as 443/UDP to make it appears more like HTTPS/3 QUIC traffic, which can help bypass port restrictions and some types of throttling on a remote travel network.
 
 ## Features
 
@@ -281,16 +283,16 @@ Client C:51822  -->  :51822 (listening) --> endpoint:51820
 
 ## Professional Support
 
-For professional assistance in deploying a cloud relay for your self-hosted VPN setups, please contact **RemoteToHome Consulting**:
+For professional assistance in deploying your own cloud relay for your self-hosted VPN setup, or using a managed relay through us, please contact **RemoteToHome Consulting**:
 
 [https://remotetohome.io/personal-support/](https://remotetohome.io/personal-support/)
 
 We offer expert consultation and deployment services for:
-- Custom relay configurations
-- Multi-cloud VPN architecture
-- High-availability setups
-- Performance optimization
-- Security hardening
+- Self-hosted VPN solutions for remote work
+- Custom cloud based VPN servers and relay configurations
+- Custom configurations of GL.iNet routers for self-hosted VPNs
+- High-availability VPN setups
+- VPN performance optimization
 
 ## Contributing
 

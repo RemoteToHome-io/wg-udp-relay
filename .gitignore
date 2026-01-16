@@ -1,37 +1,6 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
-
-# Go workspace file
-go.work
-
-# Built binary
-wg-udp-relay
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Config files with sensitive data
-*.conf
-config.json
+# Environment configuration (contains sensitive data)
 .env
+
+# Docker volumes and data
+docker-data/
+volumes/

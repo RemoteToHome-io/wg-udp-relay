@@ -305,3 +305,5 @@ MIT License - see LICENSE file for details
 ## Acknowledgments
 
 Built for use with [WireGuard](https://www.wireguard.com/)
+
+"WireGuard" is a registered trademark of Jason A. Donenfeld.

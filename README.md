@@ -5,20 +5,75 @@ A lightweight, high-performance UDP relay server designed for WireGuard VPN traf
 ## Features
 
 - High-performance UDP packet relaying
-- Configurable listen and target addresses
+- Multiple port support - listen on multiple ports simultaneously
+- Environment variable configuration via .env file
+- Docker Compose for easy deployment
 - Minimal overhead and latency
 - Connection tracking and timeout management
 - IPv4 and IPv6 support
-- Docker support for easy deployment
+- Host network mode for full port access
 
 ## Use Cases
 
 - Route WireGuard traffic through intermediate servers
 - Bypass network restrictions that block direct VPN connections
 - Optimize routing paths for better performance
-- Load balancing across multiple WireGuard endpoints
+- Support multiple WireGuard clients on different ports
 
-## Installation
+## Quick Start with Docker Compose
+
+1. Clone the repository:
+```bash
+git clone https://github.com/RemoteToHome-io/wg-udp-relay.git
+cd wg-udp-relay
+```
+
+2. Create your `.env` file from the example:
+```bash
+cp .env.example .env
+```
+
+3. Edit `.env` with your configuration:
+```bash
+# Example .env configuration
+LISTEN_PORTS=51820,51821,51822
+ENDPOINT_DDNS=vpn.yourdomain.com
+ENDPOINT_PORT=51820
+```
+
+4. Start the relay:
+```bash
+docker-compose up -d
+```
+
+5. View logs:
+```bash
+docker-compose logs -f
+```
+
+6. Stop the relay:
+```bash
+docker-compose down
+```
+
+## Configuration
+
+### Environment Variables (.env file)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `LISTEN_PORTS` | Comma-separated list of ports to listen on | `51820,51821,51822` |
+| `ENDPOINT_DDNS` | Target WireGuard endpoint DDNS URL | `vpn.example.com` |
+| `ENDPOINT_PORT` | Target WireGuard endpoint port | `51820` |
+
+### Docker Compose Configuration
+
+The `docker-compose.yml` file uses `network_mode: host` to allow the container to:
+- Bind to any port on the host machine
+- Access the host's network interfaces directly
+- Support dynamic port configuration
+
+## Manual Installation
 
 ### From Source
 
@@ -26,83 +81,85 @@ Requirements:
 - Go 1.20 or later
 
 ```bash
-git clone https://github.com/yourusername/wg-udp-relay.git
+git clone https://github.com/RemoteToHome-io/wg-udp-relay.git
 cd wg-udp-relay
 go build -o wg-udp-relay
 ```
 
-### Using Docker
+### Command-Line Usage
 
 ```bash
-docker build -t wg-udp-relay .
-docker run -d -p 51820:51820/udp wg-udp-relay -listen :51820 -target your-wg-server:51820
+# Using command-line flags
+./wg-udp-relay -ports 51820,51821 -target wg.example.com:51820
+
+# Using environment variables
+export LISTEN_PORTS=51820,51821
+export TARGET_ENDPOINT=wg.example.com:51820
+./wg-udp-relay
 ```
-
-## Usage
-
-### Basic Usage
-
-```bash
-./wg-udp-relay -listen :51820 -target 203.0.113.10:51820
-```
-
-This will:
-1. Listen for UDP packets on port 51820
-2. Forward all packets to 203.0.113.10:51820
-3. Return responses back to the original sender
 
 ### Command-Line Options
 
-- `-listen <address>` - Address to listen on (default: `:51820`)
-- `-target <address>` - Target WireGuard server address (required)
+- `-ports <ports>` - Comma-separated list of ports to listen on (or use `LISTEN_PORTS` env var)
+- `-target <address>` - Target WireGuard server address (or use `TARGET_ENDPOINT` env var)
 - `-timeout <duration>` - Connection idle timeout (default: `3m`)
 - `-buffer <size>` - UDP buffer size in bytes (default: `1500`)
-
-### Example Configurations
-
-#### Simple Relay
-```bash
-./wg-udp-relay -listen :51820 -target wg.example.com:51820
-```
-
-#### Custom Timeout
-```bash
-./wg-udp-relay -listen :51820 -target wg.example.com:51820 -timeout 5m
-```
-
-#### IPv6 Support
-```bash
-./wg-udp-relay -listen [::]:51820 -target [2001:db8::1]:51820
-```
 
 ## How It Works
 
 The relay maintains a mapping of client addresses to maintain session state:
 
-1. Client sends UDP packet to relay
-2. Relay forwards packet to WireGuard server
-3. Server response is forwarded back to original client
-4. Sessions expire after the configured timeout period
+1. Relay listens on multiple configured UDP ports
+2. Client sends UDP packet to any relay port
+3. Relay forwards packet to the configured WireGuard endpoint
+4. Server response is forwarded back to the original client
+5. Sessions expire after the configured timeout period
+
+Each listen port operates independently with its own session management.
+
+## Architecture
+
+```
+Clients              Relay Server           WireGuard Server
+-------              ------------           ----------------
+Client A:51820  -->  :51820 (listening) --> endpoint:51820
+Client B:51821  -->  :51821 (listening) --> endpoint:51820
+Client C:51822  -->  :51822 (listening) --> endpoint:51820
+```
 
 ## Performance
 
 - Minimal CPU and memory footprint
-- Handles thousands of concurrent connections
+- Handles thousands of concurrent connections per port
 - Sub-millisecond forwarding latency
 - Optimized buffer management
+- Concurrent processing for multiple ports
 
 ## Security Considerations
 
 - This relay does not decrypt or inspect WireGuard traffic
 - All WireGuard encryption remains end-to-end
 - The relay only forwards UDP packets between endpoints
+- Uses host networking for optimal performance and port access
 - Consider firewall rules to restrict relay access
+- Store `.env` file securely and never commit it to version control
 
-## Limitations
+## Troubleshooting
 
-- UDP only (WireGuard protocol requirement)
-- No built-in authentication (use firewall rules)
-- Single target server per relay instance
+### Container won't start
+- Check that `.env` file exists and is properly configured
+- Verify ports are not already in use: `sudo netstat -tulpn | grep <port>`
+- Check logs: `docker-compose logs`
+
+### Ports not accessible
+- Ensure `network_mode: host` is set in docker-compose.yml
+- Verify firewall rules allow UDP traffic on configured ports
+- Check SELinux/AppArmor policies if applicable
+
+### Connection issues
+- Verify ENDPOINT_DDNS resolves correctly: `nslookup <domain>`
+- Check that target endpoint is reachable: `nc -zvu <endpoint> <port>`
+- Review relay logs for error messages
 
 ## Contributing
 

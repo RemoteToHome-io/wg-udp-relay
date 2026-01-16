@@ -22,8 +22,8 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /build/wg-udp-relay .
 
-# Expose default WireGuard port
-EXPOSE 51820/udp
+# Note: Ports are dynamically exposed based on LISTEN_PORTS environment variable
+# Using host network mode in docker-compose for full port access
 
 # Run the relay
 ENTRYPOINT ["/app/wg-udp-relay"]

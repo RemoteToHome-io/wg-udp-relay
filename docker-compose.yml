@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  wg-udp-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wg-udp-relay
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - LISTEN_PORTS=${LISTEN_PORTS}
+      - TARGET_ENDPOINT=${ENDPOINT_DDNS}:${ENDPOINT_PORT}
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

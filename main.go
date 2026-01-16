@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -28,28 +31,60 @@ type Relay struct {
 }
 
 func main() {
-	listenAddr := flag.String("listen", ":51820", "Address to listen on")
+	listenPorts := flag.String("ports", "", "Comma-separated list of ports to listen on (e.g., 51820,51821)")
 	targetAddr := flag.String("target", "", "Target WireGuard server address (required)")
 	timeout := flag.Duration("timeout", 3*time.Minute, "Connection idle timeout")
 	bufferSize := flag.Int("buffer", 1500, "UDP buffer size in bytes")
 	
 	flag.Parse()
 
+	// Check for environment variables if flags not provided
+	if *listenPorts == "" {
+		*listenPorts = os.Getenv("LISTEN_PORTS")
+	}
 	if *targetAddr == "" {
-		log.Fatal("Error: -target flag is required")
+		*targetAddr = os.Getenv("TARGET_ENDPOINT")
 	}
 
-	relay := &Relay{
-		listenAddr: *listenAddr,
-		targetAddr: *targetAddr,
-		timeout:    *timeout,
-		bufferSize: *bufferSize,
-		sessions:   make(map[string]*ClientSession),
+	if *targetAddr == "" {
+		log.Fatal("Error: -target flag or TARGET_ENDPOINT environment variable is required")
 	}
 
-	if err := relay.Start(); err != nil {
-		log.Fatalf("Failed to start relay: %v", err)
+	if *listenPorts == "" {
+		log.Fatal("Error: -ports flag or LISTEN_PORTS environment variable is required")
 	}
+
+	// Parse listen ports
+	ports := strings.Split(*listenPorts, ",")
+	if len(ports) == 0 {
+		log.Fatal("Error: At least one listen port must be specified")
+	}
+
+	// Start a relay for each port
+	var wg sync.WaitGroup
+	for _, port := range ports {
+		port = strings.TrimSpace(port)
+		listenAddr := fmt.Sprintf(":%s", port)
+		
+		relay := &Relay{
+			listenAddr: listenAddr,
+			targetAddr: *targetAddr,
+			timeout:    *timeout,
+			bufferSize: *bufferSize,
+			sessions:   make(map[string]*ClientSession),
+		}
+
+		wg.Add(1)
+		go func(r *Relay) {
+			defer wg.Done()
+			if err := r.Start(); err != nil {
+				log.Printf("Failed to start relay on %s: %v", r.listenAddr, err)
+			}
+		}(relay)
+	}
+
+	// Wait for all relays
+	wg.Wait()
 }
 
 // Start begins the relay server

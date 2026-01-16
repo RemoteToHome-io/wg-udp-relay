@@ -34,3 +34,4 @@ Thumbs.db
 # Config files with sensitive data
 *.conf
 config.json
+.env

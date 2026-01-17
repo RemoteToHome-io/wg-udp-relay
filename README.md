@@ -262,8 +262,7 @@ This ensures the relay continues working even when your DDNS endpoint IP changes
 Clients              Relay Server           WireGuard Server
 -------              ------------           ----------------
 Client A:51820  -->  :51820 (listening) --> endpoint:51820
-Client B:51821  -->  :51821 (listening) --> endpoint:51820
-Client C:51822  -->  :51822 (listening) --> endpoint:51820
+Client B:443  -->  :443 (listening) --> endpoint:51820
 ```
 
 ## Performance

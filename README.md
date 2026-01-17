@@ -35,6 +35,19 @@ The project code is AI assisted with manual review.  Given it has no access to p
 - Optimize routing paths for better performance
 - Support multiple WireGuard clients on different ports
 
+## System Requirements
+
+### Minimum Hardware
+- **CPU**: 1 vCPU
+- **RAM**: 512 MB (1 GB recommended)
+- **Disk**: 1 GB (5-10 GB recommended for logs)
+
+### Network
+- **Bandwidth**: Depends on usage (relay forwards all VPN traffic 1:1)
+- **Geographic Location**: Choose a VPS location between your travel destinations and home server for optimal routing performance
+
+**Example**: $5-6/month VPS easily handles 20-30 concurrent clients.
+
 ## Quick Start with Docker Compose
 
 1. Clone the repository:

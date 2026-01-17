@@ -8,7 +8,7 @@ This type of relay does not have the ability to decrypt or modify the WireGuard 
 
 **Transparency:**
 
-The project code went from hand-written, to AI refactored and enhanced, with manual review.  Given it has no access to private data or any portion of the tunnel data, the priority is quick development/enhancement and documentation.
+The project code went from hand-written, to AI refactored and enhanced with manual review.  Given it has no access to private data or any portion of the tunnel data, the priority is quick development/enhancement and documentation.
 
 ## To-do / coming soon:
 - Anycast routing - explore adding Anycast support with Vultr or DigitalOcean

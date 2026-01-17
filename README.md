@@ -112,7 +112,7 @@ To use the relay, you need to update your WireGuard client configuration to poin
 
 - **Original WireGuard Server**: `xxxxxxx.glddns.com:58120`
 - **Relay VPS**: `relay-vps.example.com` (or VPS IP address)
-- **Relay Listen Port**: `443` (appears as HTTPS traffic to bypass restrictions)
+- **Relay Listen Port**: `443` (use HTTPS/3 QUIC UDP port to bypass restrictions)
 
 ### Configuration Change
 

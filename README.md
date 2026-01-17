@@ -311,7 +311,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+This ensures that any modifications or derivative works remain open source and benefit the community.
 
 ## Acknowledgments
 

@@ -151,16 +151,16 @@ PersistentKeepalive = 25
 
 ### Why This Works
 
-- The relay receives packets on port `443`
+- The relay receives packets on port `443/UDP`
 - The relay forwards packets to `xxxxxxx.glddns.com:58120`
 - Responses are sent back through the relay to your client
 - All WireGuard encryption remains end-to-end
-- To firewalls and ISPs, it appears as HTTPS traffic on port `443`
+- To firewalls and ISPs, it appears as HTTPS/3 QUIC traffic on port `443/UDP`
 
 ### Benefits
 
-- Bypass port restrictions (many networks allow port 443)
-- Bypass protocol restrictions (appears as HTTPS)
+- Bypass port restrictions (many networks allow port 443/UDP for QUIC)
+- Bypass protocol restrictions
 - Maintain full WireGuard security
 - Automatic endpoint IP updates via DDNS monitoring
 

@@ -40,7 +40,7 @@ The project code went from hand-written, to AI refactored and enhanced with manu
 ### Minimum Hardware
 - **CPU**: 1 vCPU
 - **RAM**: 512 MB (1 GB recommended)
-- **Disk**: 1 GB (5-10 GB recommended for logs)
+- **Disk**: 1 GB (5-10 GB total VPS size including OS and any desired logs)
 
 ### Network
 - **Bandwidth**: Depends on usage (relay forwards all VPN traffic 1:1)

@@ -169,7 +169,9 @@ PersistentKeepalive = 25
 - Keep the same `PublicKey`, `PrivateKey`, and `Address` values
 - Only change the `Endpoint` field
 - No changes needed on the WireGuard server itself
-- The relay is transparent to the WireGuard protocol
+- **The relay is NOT transparent**: The WireGuard server will see all connections from the relay's IP address, not individual client IPs
+- The relay performs SNAT (Source NAT) to ensure WireGuard handshakes complete successfully
+- End-to-end encryption is maintained - the relay cannot decrypt WireGuard traffic
 
 ### MTU Considerations
 
@@ -231,15 +233,36 @@ export TARGET_ENDPOINT=wg.example.com:51820
 
 ## How It Works
 
-The relay maintains a mapping of client addresses to maintain session state:
+The relay performs Source NAT (SNAT) on forwarded packets to ensure WireGuard compatibility:
 
 1. Relay listens on multiple configured UDP ports
-2. Client sends UDP packet to any relay port
-3. Relay forwards packet to the configured WireGuard endpoint
-4. Server response is forwarded back to the original client
-5. Sessions expire after the configured timeout period
+2. Client sends UDP packet to relay listen port
+3. Relay creates unique ephemeral port for this client session
+4. Relay forwards packet FROM ephemeral port TO WireGuard server
+5. Server sees traffic from relay IP (not client IP)
+6. Server responds to relay's ephemeral port
+7. Relay sends response back to client FROM listen port
+8. Sessions expire after the configured timeout period
 
 Each listen port operates independently with its own session management.
+
+### Network Address Translation
+
+The relay performs Source NAT (SNAT) on all forwarded packets:
+
+**Outbound (Client → Server):**
+- Original: `ClientIP:ClientPort → RelayIP:RelayListenPort`
+- Forwarded: `RelayIP:EphemeralPort → ServerIP:ServerPort`
+
+**Inbound (Server → Client):**
+- Received: `ServerIP:ServerPort → RelayIP:EphemeralPort`
+- Forwarded: `RelayIP:RelayListenPort → ClientIP:ClientPort`
+
+**Why SNAT is Required:**
+
+WireGuard performs "endpoint roaming" - it extracts the source IP address from UDP packets and uses it for direct responses. Without SNAT, the WireGuard server would see the client's real IP and attempt to respond directly, bypassing the relay entirely. SNAT ensures the server only sees the relay's IP address, maintaining the relay path for all traffic.
+
+**Important**: This means the relay is NOT transparent - the WireGuard server will see all client traffic originating from the relay's IP address, not the original client IPs.
 
 ### DDNS Monitoring
 

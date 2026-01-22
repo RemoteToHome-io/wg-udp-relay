@@ -15,7 +15,6 @@ import (
 type ClientSession struct {
 	clientAddr     *net.UDPAddr  // Original client address
 	toServerConn   *net.UDPConn  // Connection to WireGuard server (has ephemeral port)
-	toClientConn   *net.UDPConn  // Connection back to client (bound to listen port)
 	lastActive     time.Time
 	mu             sync.Mutex
 }
@@ -175,23 +174,9 @@ func (r *Relay) handleClientPacket(data []byte, clientAddr *net.UDPAddr) {
 			return
 		}
 
-		// Create connection TO client (bound to our listen port for proper source)
-		localAddr := &net.UDPAddr{
-			IP:   net.IPv4zero,
-			Port: r.listenPort,
-		}
-		toClientConn, err := net.DialUDP("udp", localAddr, clientAddr)
-		if err != nil {
-			log.Printf("Error creating client connection for %s: %v", clientKey, err)
-			toServerConn.Close()
-			r.sessionsMu.Unlock()
-			return
-		}
-
 		session = &ClientSession{
 			clientAddr:   clientAddr,
 			toServerConn: toServerConn,
-			toClientConn: toClientConn,
 			lastActive:   time.Now(),
 		}
 		r.sessions[clientKey] = session
@@ -239,9 +224,9 @@ func (r *Relay) handleTargetResponses(session *ClientSession, clientKey string) 
 		session.lastActive = time.Now()
 		session.mu.Unlock()
 
-		// Reverse SNAT: Send back to client from our listen port
+		// Reverse SNAT: Send back to client from our listen port using main listener
 		// Client sees: (relay_ip, listen_port) -> (client_ip, client_port)
-		_, err = session.toClientConn.Write(buffer[:n])
+		_, err = r.listenConn.WriteToUDP(buffer[:n], session.clientAddr)
 		if err != nil {
 			log.Printf("Error sending to client %s: %v", clientKey, err)
 		}
@@ -255,7 +240,6 @@ func (r *Relay) closeSession(clientKey string) {
 
 	if session, exists := r.sessions[clientKey]; exists {
 		session.toServerConn.Close()
-		session.toClientConn.Close()
 		delete(r.sessions, clientKey)
 		log.Printf("Closed session: %s", clientKey)
 	}
@@ -273,7 +257,6 @@ func (r *Relay) cleanupSessions() {
 			session.mu.Lock()
 			if now.Sub(session.lastActive) > r.timeout {
 				session.toServerConn.Close()
-				session.toClientConn.Close()
 				delete(r.sessions, key)
 				log.Printf("Cleaned up expired session: %s", key)
 			}
@@ -333,8 +316,7 @@ func (r *Relay) migrateSessionsToNewTarget(newTarget *net.UDPAddr) {
 		newConn, err := net.DialUDP("udp", nil, newTarget)
 		if err != nil {
 			log.Printf("[%s] Failed to migrate session %s: %v", r.listenAddr, clientKey, err)
-			// Also close client connection and remove session
-			session.toClientConn.Close()
+			// Remove failed session
 			delete(r.sessions, clientKey)
 			session.mu.Unlock()
 			continue

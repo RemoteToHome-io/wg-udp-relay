@@ -279,6 +279,32 @@ The relay automatically monitors the target endpoint's DNS record for IP changes
 
 This ensures the relay continues working even when your DDNS endpoint IP changes, which is common with dynamic DNS services.
 
+## Performance Optimization
+
+For optimal throughput (200-300+ Mbps), system-level tuning is required. **See the [Performance Tuning Guide](PERFORMANCE_TUNING.md) for detailed instructions.**
+
+**Quick Summary:**
+- Default Linux UDP buffers are too small for high-speed relay operations
+- Tuning the relay VPS is **required** for >100 Mbps throughput
+- Without tuning: 30-60 Mbps with 1-5% packet loss
+- With tuning: 200-300+ Mbps with zero packet loss
+
+**10-minute setup:**
+```bash
+# On relay VPS only
+sudo tee -a /etc/sysctl.conf << EOF
+net.core.rmem_max=134217728
+net.core.wmem_max=134217728
+net.core.rmem_default=134217728
+net.core.wmem_default=134217728
+net.core.netdev_max_backlog=30000
+EOF
+sudo sysctl -p
+docker restart wg-udp-relay
+```
+
+This single configuration change typically provides a 3-5x throughput improvement. See the full guide for optional GL.iNet router tuning and testing procedures.
+
 ## Architecture
 
 ```

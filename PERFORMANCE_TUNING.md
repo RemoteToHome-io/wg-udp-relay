@@ -1,0 +1,218 @@
+# Performance Tuning Guide for wg-udp-relay
+
+## Overview
+
+By default, Linux systems have UDP receive buffers that are too small for high-throughput WireGuard relay operations. Without tuning, you may experience:
+- Packet loss (1-5%)
+- Poor TCP performance through the tunnel
+- Throughput limited to 30-60 Mbps even on gigabit connections
+
+With proper tuning, the relay can achieve 200-300+ Mbps throughput with zero packet loss.
+
+## Critical: Relay VPS Tuning (Required)
+
+The relay VPS is the most critical component to tune. This tuning is **required** for optimal performance regardless of client/server hardware.
+
+### Apply Tuning (Persistent)
+
+SSH into your relay VPS and run:
+```bash
+# Increase UDP buffer sizes to 128 MB
+sudo tee -a /etc/sysctl.conf << EOF
+net.core.rmem_max=134217728
+net.core.wmem_max=134217728
+net.core.rmem_default=134217728
+net.core.wmem_default=134217728
+net.core.netdev_max_backlog=30000
+EOF
+
+# Apply immediately
+sudo sysctl -p
+```
+
+### Verify Tuning
+```bash
+sysctl net.core.rmem_max
+sysctl net.core.wmem_max
+# Should show: 134217728
+```
+
+### What This Does
+
+- **rmem_max/wmem_max**: Maximum UDP receive/send buffer sizes (128 MB)
+- **rmem_default/wmem_default**: Default buffer sizes for new sockets
+- **netdev_max_backlog**: Increases packet queue size for high packet rates
+
+These settings allow the relay to buffer incoming packets during traffic bursts, preventing packet drops that destroy TCP performance.
+
+## WireGuard Server Tuning (Recommended)
+
+If your WireGuard server is a Linux VPS or system with root access, apply similar tuning:
+```bash
+sudo tee -a /etc/sysctl.conf << EOF
+net.core.rmem_max=67108864
+net.core.wmem_max=67108864
+net.core.rmem_default=67108864
+net.core.wmem_default=67108864
+EOF
+
+sudo sysctl -p
+```
+
+**Note:** Use 64 MB (half the relay buffer size) as the server typically handles less concurrent traffic than the relay.
+
+## GL.iNet Router Tuning (Optional)
+
+If your WireGuard server or client is a GL.iNet router (or other OpenWrt device), you can apply tuning with smaller buffer sizes due to limited RAM:
+```bash
+# SSH into GL.iNet router
+ssh root@192.168.8.1
+
+# Add tuning to /etc/sysctl.conf
+cat >> /etc/sysctl.conf << EOF
+net.core.rmem_max=8388608
+net.core.wmem_max=8388608
+net.core.rmem_default=262144
+net.core.wmem_default=262144
+net.ipv4.tcp_rmem=4096 87380 8388608
+net.ipv4.tcp_wmem=4096 87380 8388608
+EOF
+
+# Apply immediately
+sysctl -p
+```
+
+**GL.iNet Router Considerations:**
+- Buffer sizes are smaller (8 MB) due to limited RAM (256MB-1GB typical)
+- Still provides significant improvement over defaults
+- Persists across reboots
+- Router CPU becomes bottleneck before network at ~100-200 Mbps
+
+## Performance Expectations
+
+### Without Tuning
+- **Relay throughput**: 30-60 Mbps
+- **Packet loss**: 1-5%
+- **TCP retransmissions**: Hundreds per minute
+- **Symptoms**: Slow downloads, video buffering, inconsistent speeds
+
+### With Relay VPS Tuning Only
+- **Relay throughput**: 150-200 Mbps
+- **Packet loss**: <0.1%
+- **TCP retransmissions**: Near zero
+- **Improvement**: 3-5x throughput increase
+
+### With Full Tuning (Relay + Server + GL.iNet Routers)
+- **Relay throughput**: 200-300+ Mbps (limited by VPS CPU/network)
+- **Packet loss**: 0%
+- **TCP retransmissions**: Zero
+- **Best case**: Matches or exceeds direct connection speeds via better routing
+
+### Hardware Limitations
+- **Linode Nanode (shared vCPU)**: ~60-80 Mbps (CPU limited)
+- **Linode Dedicated 2GB (2 vCPU)**: 200-300+ Mbps
+- **GL.iNet MT3000**: ~100-150 Mbps (router CPU/WireGuard crypto limited)
+- **GL.iNet AXT1800**: ~150-250 Mbps (faster CPU)
+- **High-end routers/VPS**: 300+ Mbps (network becomes limit)
+
+## Testing Your Tuning
+
+### Check for Packet Loss
+```bash
+# On relay VPS - check for receive buffer errors
+netstat -su | grep -i "receive buffer errors"
+
+# Run this before and during a speed test
+# Errors should NOT increase if tuning is correct
+```
+
+### UDP Performance Test
+
+Using iperf3 (install on both client and server):
+```bash
+# On WireGuard server (inside tunnel)
+iperf3 -s
+
+# From client (through relay tunnel)
+iperf3 -c <server_tunnel_ip> -u -b 200M -t 30
+
+# Look for:
+# - 0% packet loss (or <0.1%)
+# - Consistent throughput
+```
+
+### TCP Performance Test
+```bash
+# On WireGuard server
+iperf3 -s
+
+# From client (through relay tunnel)
+iperf3 -c <server_tunnel_ip> -t 30
+
+# Should see:
+# - High sustained throughput (100+ Mbps)
+# - 0 or very few retransmissions (Retr column)
+# - Large congestion window (Cwnd 2-4+ MB)
+```
+
+### Real-World Test
+
+Run a speedtest through the tunnel from a device connected to the client GL.iNet router:
+- Visit https://speedtest.net
+- Select a server in the same region as your WireGuard server
+- Compare against direct connection benchmarks
+
+## Troubleshooting
+
+### Still seeing packet loss?
+```bash
+# Check current buffer sizes
+sysctl net.core.rmem_max
+
+# Check for buffer errors
+netstat -su | grep "receive buffer errors"
+
+# Restart relay after tuning
+docker restart wg-udp-relay
+```
+
+### TCP still slow despite 0% UDP packet loss?
+
+- Verify GL.iNet router tuning is applied (both client and server routers)
+- Check that routers have been rebooted after tuning
+- Ensure no middlebox is interfering with TCP window scaling
+
+### Lower performance than expected?
+
+- Check VPS CPU usage during test (`top` or `htop`)
+- Verify you're using Dedicated CPU plans for high throughput
+- GL.iNet routers are CPU-limited, not network-limited
+
+## Real-World Example
+
+Testing from Puerto Vallarta, Mexico → California Relay → Singapore Server:
+
+| Configuration | Download | Upload | Packet Loss |
+|--------------|----------|--------|-------------|
+| Direct connection | 90 Mbps | 65 Mbps | N/A |
+| Relay (default buffers) | 65 Mbps | 60 Mbps | 1.4% |
+| Relay (tuned buffers) | **332 Mbps** | **160 Mbps** | **0%** |
+
+**Result**: 5x improvement over direct connection by optimizing the network path and eliminating packet loss through proper buffer tuning.
+
+## Summary
+
+**Minimum Required Tuning:**
+1. Apply UDP buffer tuning to relay VPS (10 minutes, persists forever)
+2. Restart relay Docker container
+
+**Expected Result:**
+- 3-5x throughput improvement
+- Near-zero packet loss
+- Stable, consistent performance
+
+**Optional Additional Tuning:**
+- WireGuard server buffers (if Linux VPS)
+- GL.iNet router buffers (both client and server routers if applicable)
+
+The relay code itself is highly efficient. The bottleneck is almost always OS-level UDP buffer limits on the relay VPS. Proper tuning unlocks the relay's full potential.

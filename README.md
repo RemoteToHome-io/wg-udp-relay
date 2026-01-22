@@ -300,7 +300,7 @@ net.core.wmem_default=134217728
 net.core.netdev_max_backlog=30000
 EOF
 sudo sysctl -p
-docker restart wg-udp-relay
+docker compose restart
 ```
 
 This single configuration change typically provides a 3-5x throughput improvement. See the full guide for optional GL.iNet router tuning and testing procedures.

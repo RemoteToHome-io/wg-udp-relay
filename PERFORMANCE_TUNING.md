@@ -173,7 +173,7 @@ sysctl net.core.rmem_max
 netstat -su | grep "receive buffer errors"
 
 # Restart relay after tuning
-docker restart wg-udp-relay
+docker compose restart
 ```
 
 ### TCP still slow despite 0% UDP packet loss?

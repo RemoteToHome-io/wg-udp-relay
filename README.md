@@ -285,9 +285,10 @@ For optimal throughput (200-300+ Mbps), system-level tuning is required. **See t
 
 **Quick Summary:**
 - Default Linux UDP buffers are too small for high-speed relay operations
-- Tuning the relay VPS is **required** for >100 Mbps throughput
+- **Only the relay VPS needs tuning** - client/server tuning is optional and provides no measurable benefit
 - Without tuning: 30-60 Mbps with 1-5% packet loss
-- With tuning: 200-300+ Mbps with zero packet loss
+- With relay-only tuning: 200-300+ Mbps with zero packet loss
+- Real test results: 301.89 Mbps down / 164.73 Mbps up with relay-only tuning
 
 **10-minute setup:**
 ```bash
@@ -303,7 +304,7 @@ sudo sysctl -p
 docker compose restart
 ```
 
-This single configuration change typically provides a 3-5x throughput improvement. See the full guide for optional GL.iNet router tuning and testing procedures.
+This single configuration change typically provides a 5-10x throughput improvement. Client and server tuning are optional but testing shows no additional performance benefit.
 
 ## Architecture
 

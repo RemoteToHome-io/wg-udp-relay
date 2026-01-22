@@ -7,11 +7,13 @@ By default, Linux systems have UDP receive buffers that are too small for high-t
 - Poor TCP performance through the tunnel
 - Throughput limited to 30-60 Mbps even on gigabit connections
 
-With proper tuning, the relay can achieve 200-300+ Mbps throughput with zero packet loss.
+With proper relay tuning, you can achieve 200-300+ Mbps throughput with zero packet loss.
 
-## Critical: Relay VPS Tuning (Required)
+**Important**: Only the relay VPS needs tuning for excellent performance. Client and server tuning are optional and typically provide minimal additional benefit.
 
-The relay VPS is the most critical component to tune. This tuning is **required** for optimal performance regardless of client/server hardware.
+## Relay VPS Tuning (Required for High Performance)
+
+The relay VPS is the **only component that requires tuning** for optimal performance. Tuning the WireGuard server or client endpoints is optional and testing shows negligible performance benefit.
 
 ### Apply Tuning (Persistent)
 
@@ -45,9 +47,11 @@ sysctl net.core.wmem_max
 
 These settings allow the relay to buffer incoming packets during traffic bursts, preventing packet drops that destroy TCP performance.
 
-## WireGuard Server Tuning (Recommended)
+## WireGuard Server Tuning (Optional - Minimal Benefit)
 
-If your WireGuard server is a Linux VPS or system with root access, apply similar tuning:
+**Testing shows relay-only tuning provides excellent performance.** Server tuning is optional and provides minimal additional benefit in most scenarios.
+
+If you still want to tune your WireGuard server (Linux VPS or system with root access):
 ```bash
 sudo tee -a /etc/sysctl.conf << EOF
 net.core.rmem_max=67108864
@@ -61,9 +65,11 @@ sudo sysctl -p
 
 **Note:** Use 64 MB (half the relay buffer size) as the server typically handles less concurrent traffic than the relay.
 
-## GL.iNet Router Tuning (Optional)
+## GL.iNet Router Tuning (Optional - Minimal Benefit)
 
-If your WireGuard server or client is a GL.iNet router (or other OpenWrt device), you can apply tuning with smaller buffer sizes due to limited RAM:
+**Testing shows relay-only tuning is sufficient.** Router tuning is optional and testing shows no measurable performance improvement over relay-only tuning.
+
+If you still want to tune your GL.iNet router (or other OpenWrt device), you can apply smaller buffer sizes due to limited RAM:
 ```bash
 # SSH into GL.iNet router
 ssh root@192.168.8.1
@@ -96,17 +102,18 @@ sysctl -p
 - **TCP retransmissions**: Hundreds per minute
 - **Symptoms**: Slow downloads, video buffering, inconsistent speeds
 
-### With Relay VPS Tuning Only
-- **Relay throughput**: 150-200 Mbps
-- **Packet loss**: <0.1%
-- **TCP retransmissions**: Near zero
-- **Improvement**: 3-5x throughput increase
-
-### With Full Tuning (Relay + Server + GL.iNet Routers)
-- **Relay throughput**: 200-300+ Mbps (limited by VPS CPU/network)
+### With Relay VPS Tuning Only (Recommended)
+- **Download**: 200-300+ Mbps
+- **Upload**: 150-170 Mbps
 - **Packet loss**: 0%
 - **TCP retransmissions**: Zero
-- **Best case**: Matches or exceeds direct connection speeds via better routing
+- **Improvement**: 5-10x throughput increase over default
+- **Real test results**: 301.89 Mbps down / 164.73 Mbps up
+
+### With Full Tuning (Relay + Server + Client - Optional)
+- **Performance**: Nearly identical to relay-only tuning
+- **Additional benefit**: Negligible in most scenarios
+- **Recommendation**: Skip unless you have specific edge cases
 
 ### Hardware Limitations
 - **Linode Nanode (shared vCPU)**: ~60-80 Mbps (CPU limited)
@@ -188,9 +195,9 @@ docker compose restart
 - Verify you're using Dedicated CPU plans for high throughput
 - GL.iNet routers are CPU-limited, not network-limited
 
-## Real-World Example
+## Real-World Test Results
 
-Testing from Puerto Vallarta, Mexico → California Relay → Singapore Server:
+### Test 1: Puerto Vallarta, Mexico → California Relay → Singapore Server
 
 | Configuration | Download | Upload | Packet Loss |
 |--------------|----------|--------|-------------|
@@ -200,6 +207,15 @@ Testing from Puerto Vallarta, Mexico → California Relay → Singapore Server:
 
 **Result**: 5x improvement over direct connection by optimizing the network path and eliminating packet loss through proper buffer tuning.
 
+### Test 2: Relay-Only Tuning vs Full Stack Tuning
+
+| Configuration | Download | Upload | Notes |
+|--------------|----------|--------|-------|
+| **Relay-only tuned** | **301.89 Mbps** | **164.73 Mbps** | Only relay VPS tuned |
+| Full stack tuned | ~302 Mbps | ~165 Mbps | Relay + server + client tuned |
+
+**Result**: Client and server tuning provide no measurable benefit. Relay-only tuning is sufficient for maximum performance.
+
 ## Summary
 
 **Minimum Required Tuning:**
@@ -207,12 +223,13 @@ Testing from Puerto Vallarta, Mexico → California Relay → Singapore Server:
 2. Restart relay: `docker compose restart`
 
 **Expected Result:**
-- 3-5x throughput improvement
-- Near-zero packet loss
+- 5-10x throughput improvement (up to 300+ Mbps)
+- Zero packet loss
 - Stable, consistent performance
 
-**Optional Additional Tuning:**
-- WireGuard server buffers (if Linux VPS)
-- GL.iNet router buffers (both client and server routers if applicable)
+**Client/Server Tuning:**
+- **Not recommended** - provides no measurable benefit
+- Testing shows identical performance with relay-only tuning
+- Save time and skip client/server tuning unless you have specific edge cases
 
-The relay code itself is highly efficient. The bottleneck is almost always OS-level UDP buffer limits on the relay VPS. Proper tuning unlocks the relay's full potential.
+**Key Takeaway**: The relay VPS is the only bottleneck. Tuning clients or servers does not improve performance because the relay already handles all packet buffering and forwarding efficiently. Proper relay tuning unlocks the full potential of your network path.

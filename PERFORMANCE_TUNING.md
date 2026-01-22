@@ -115,12 +115,62 @@ sysctl -p
 - **Additional benefit**: Negligible in most scenarios
 - **Recommendation**: Skip unless you have specific edge cases
 
-### Hardware Limitations
-- **Linode Nanode (shared vCPU)**: ~60-80 Mbps (CPU limited)
-- **Linode Dedicated 2GB (2 vCPU)**: 200-300+ Mbps
+## Hardware Requirements
+
+### Budget Option (Good Performance)
+**Nanode 1GB** ($5/month):
+- 1 shared vCPU, 1GB RAM
+- 40 Gbps in / 1 Gbps out
+- **Throughput: 200-250 Mbps** with tuning
+- Best for: Budget-conscious users, light-moderate use
+- Value: +++++
+
+### Recommended (Best Balance)
+**Linode 2GB** ($12/month):
+- 1 shared vCPU, 2GB RAM
+- 40 Gbps in / 2 Gbps out
+- **Throughput: 300-350 Mbps** with tuning
+- Best for: Most production deployments
+- Value: ++++
+
+### Premium (Guaranteed Performance)
+**Dedicated CPU Plans** (starting $36/month):
+- 2+ dedicated vCPUs, 4GB+ RAM
+- 40 Gbps in / 8+ Gbps out
+- **Throughput: 350+ Mbps** with tuning
+- Best for: Enterprise, SLA requirements, many simultaneous users
+- Value: ++
+
+### Real-World Testing Results
+Puerto Vallarta, Mexico → California Relay → Singapore Server
+
+**Nanode 1GB ($5/mo):**
+- Average: 215 Mbps down / 125 Mbps up
+- Range: 178-242 Mbps down / 80-147 Mbps up
+- Latency: 248ms
+- Notes: Variable upload during peak times
+
+**Linode 2GB ($12/mo):**
+- Average: 332 Mbps down / 160 Mbps up  
+- Latency: 247ms
+- Notes: Consistent, stable performance
+
+**Comparison vs Direct Connection:**
+- Direct PV→SG: 90 Mbps / 65 Mbps
+- Nanode relay: **2.4x faster download**
+- Linode 2GB relay: **3.7x faster download**
+
+### Recommendation
+- **Start here:** Linode 2GB ($12/mo) - best balance of cost and performance
+- **Budget option:** Nanode 1GB ($5/mo) - still 2x+ faster than direct connection
+- **Skip:** Dedicated CPU plans unless you need guaranteed >350 Mbps or serve 20+ users
+
+**Critical:** Buffer tuning (10 minutes, free) is required regardless of plan. An untuned $36 dedicated instance performs worse than a tuned $5 Nanode.
+
+### Other Hardware Considerations
 - **GL.iNet MT3000**: ~100-150 Mbps (router CPU/WireGuard crypto limited)
 - **GL.iNet AXT1800**: ~150-250 Mbps (faster CPU)
-- **High-end routers/VPS**: 300+ Mbps (network becomes limit)
+- **High-end routers**: 300+ Mbps (network becomes limit)
 
 ## Testing Your Tuning
 

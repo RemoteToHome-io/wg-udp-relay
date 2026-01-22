@@ -35,18 +35,60 @@ The project code went from hand-written, to AI refactored and enhanced with manu
 - Optimize routing paths for better performance
 - Support multiple WireGuard clients on different ports
 
-## System Requirements
+## Hardware Requirements
 
-### Minimum Hardware
-- **CPU**: 1 vCPU
-- **RAM**: 512 MB (1 GB recommended)
-- **Disk**: 1 GB for relay application (recommend 5-10 GB total VPS including OS)
+### Budget Option (Good Performance)
+**Nanode 1GB** ($5/month):
+- 1 shared vCPU, 1GB RAM
+- 40 Gbps in / 1 Gbps out
+- **Throughput: 200-250 Mbps** with tuning
+- Best for: Budget-conscious users, light-moderate use
+- Value: +++++
 
-### Network
-- **Bandwidth**: Depends on usage (relay forwards all VPN traffic 1:1)
-- **Geographic Location**: Choose a VPS location between your travel destinations and home server for optimal routing performance
+### Recommended (Best Balance)
+**Linode 2GB** ($12/month):
+- 1 shared vCPU, 2GB RAM
+- 40 Gbps in / 2 Gbps out
+- **Throughput: 300-350 Mbps** with tuning
+- Best for: Most production deployments
+- Value: ++++
 
-**Example**: $5-6/month VPS easily handles 20-30 concurrent clients.
+### Premium (Guaranteed Performance)
+**Dedicated CPU Plans** (starting $36/month):
+- 2+ dedicated vCPUs, 4GB+ RAM
+- 40 Gbps in / 8+ Gbps out
+- **Throughput: 350+ Mbps** with tuning
+- Best for: Enterprise, SLA requirements, many simultaneous users
+- Value: ++
+
+### Real-World Testing Results
+Puerto Vallarta, Mexico → California Relay → Singapore Server
+
+**Nanode 1GB ($5/mo):**
+- Average: 215 Mbps down / 125 Mbps up
+- Range: 178-242 Mbps down / 80-147 Mbps up
+- Latency: 248ms
+- Notes: Variable upload during peak times
+
+**Linode 2GB ($12/mo):**
+- Average: 332 Mbps down / 160 Mbps up  
+- Latency: 247ms
+- Notes: Consistent, stable performance
+
+**Comparison vs Direct Connection:**
+- Direct PV→SG: 90 Mbps / 65 Mbps
+- Nanode relay: **2.4x faster download**
+- Linode 2GB relay: **3.7x faster download**
+
+### Recommendation
+- **Start here:** Linode 2GB ($12/mo) - best balance of cost and performance
+- **Budget option:** Nanode 1GB ($5/mo) - still 2x+ faster than direct connection
+- **Skip:** Dedicated CPU plans unless you need guaranteed >350 Mbps or serve 20+ users
+
+**Critical:** Buffer tuning (10 minutes, free) is required regardless of plan. An untuned $36 dedicated instance performs worse than a tuned $5 Nanode.
+
+### Geographic Location
+Choose a VPS location between your travel destinations and home server for optimal routing performance.
 
 ## Quick Start with Docker Compose
 

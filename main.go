@@ -11,25 +11,28 @@ import (
 	"time"
 )
 
-// ClientSession represents an active client connection
+// ClientSession represents an active client connection with SNAT mapping
 type ClientSession struct {
-	clientAddr *net.UDPAddr
-	conn       *net.UDPConn
-	lastActive time.Time
-	mu         sync.Mutex
+	clientAddr     *net.UDPAddr  // Original client address
+	toServerConn   *net.UDPConn  // Connection to WireGuard server (has ephemeral port)
+	toClientConn   *net.UDPConn  // Connection back to client (bound to listen port)
+	lastActive     time.Time
+	mu             sync.Mutex
 }
 
-// Relay manages UDP packet forwarding
+// Relay manages UDP packet forwarding with SNAT
 type Relay struct {
-	listenAddr      string
-	targetAddr      string
-	timeout         time.Duration
-	bufferSize      int
+	listenAddr       string
+	listenPort       int
+	targetAddr       string
+	timeout          time.Duration
+	bufferSize       int
 	dnsCheckInterval time.Duration
-	sessions        map[string]*ClientSession
-	sessionsMu      sync.RWMutex
-	targetConn      *net.UDPAddr
-	targetConnMu    sync.RWMutex
+	listenConn       *net.UDPConn      // Main listening connection
+	sessions         map[string]*ClientSession  // Keyed by client address
+	sessionsMu       sync.RWMutex
+	targetConn       *net.UDPAddr
+	targetConnMu     sync.RWMutex
 }
 
 func main() {
@@ -110,11 +113,19 @@ func (r *Relay) Start() error {
 	r.targetConnMu.Unlock()
 
 	// Create listening socket
-	listenConn, err := net.ListenPacket("udp", r.listenAddr)
+	listenAddr, err := net.ResolveUDPAddr("udp", r.listenAddr)
+	if err != nil {
+		return err
+	}
+	
+	listenConn, err := net.ListenUDP("udp", listenAddr)
 	if err != nil {
 		return err
 	}
 	defer listenConn.Close()
+	
+	r.listenConn = listenConn
+	r.listenPort = listenAddr.Port
 
 	log.Printf("UDP relay started: %s -> %s (%s)", r.listenAddr, r.targetAddr, targetAddr.IP.String())
 	log.Printf("Settings: timeout=%s, buffer=%d bytes, DNS check interval=%s", r.timeout, r.bufferSize, r.dnsCheckInterval)
@@ -128,18 +139,22 @@ func (r *Relay) Start() error {
 	// Main packet handling loop
 	buffer := make([]byte, r.bufferSize)
 	for {
-		n, clientAddr, err := listenConn.ReadFrom(buffer)
+		n, clientAddr, err := listenConn.ReadFromUDP(buffer)
 		if err != nil {
 			log.Printf("Error reading from client: %v", err)
 			continue
 		}
 
+		// Make a copy of the packet data for the goroutine
+		dataCopy := make([]byte, n)
+		copy(dataCopy, buffer[:n])
+
 		// Handle packet in goroutine for concurrency
-		go r.handleClientPacket(buffer[:n], clientAddr.(*net.UDPAddr))
+		go r.handleClientPacket(dataCopy, clientAddr)
 	}
 }
 
-// handleClientPacket processes a packet from a client
+// handleClientPacket processes a packet from a client with SNAT
 func (r *Relay) handleClientPacket(data []byte, clientAddr *net.UDPAddr) {
 	clientKey := clientAddr.String()
 
@@ -152,22 +167,37 @@ func (r *Relay) handleClientPacket(data []byte, clientAddr *net.UDPAddr) {
 		targetConn := r.targetConn
 		r.targetConnMu.RUnlock()
 
-		// Create new session
-		conn, err := net.DialUDP("udp", nil, targetConn)
+		// Create connection TO server (gets ephemeral source port)
+		toServerConn, err := net.DialUDP("udp", nil, targetConn)
 		if err != nil {
-			log.Printf("Error creating connection for %s: %v", clientKey, err)
+			log.Printf("Error creating server connection for %s: %v", clientKey, err)
+			r.sessionsMu.Unlock()
+			return
+		}
+
+		// Create connection TO client (bound to our listen port for proper source)
+		localAddr := &net.UDPAddr{
+			IP:   net.IPv4zero,
+			Port: r.listenPort,
+		}
+		toClientConn, err := net.DialUDP("udp", localAddr, clientAddr)
+		if err != nil {
+			log.Printf("Error creating client connection for %s: %v", clientKey, err)
+			toServerConn.Close()
 			r.sessionsMu.Unlock()
 			return
 		}
 
 		session = &ClientSession{
-			clientAddr: clientAddr,
-			conn:       conn,
-			lastActive: time.Now(),
+			clientAddr:   clientAddr,
+			toServerConn: toServerConn,
+			toClientConn: toClientConn,
+			lastActive:   time.Now(),
 		}
 		r.sessions[clientKey] = session
 
-		log.Printf("New session: %s", clientKey)
+		log.Printf("[%s] New session: %s -> ephemeral:%d -> %s", 
+			r.listenAddr, clientKey, toServerConn.LocalAddr().(*net.UDPAddr).Port, targetConn.String())
 
 		// Start goroutine to handle responses from target
 		go r.handleTargetResponses(session, clientKey)
@@ -179,28 +209,21 @@ func (r *Relay) handleClientPacket(data []byte, clientAddr *net.UDPAddr) {
 	session.lastActive = time.Now()
 	session.mu.Unlock()
 
-	// Forward packet to target
-	_, err := session.conn.Write(data)
+	// SNAT: Forward packet to server through ephemeral port connection
+	// Server sees: (relay_ip, ephemeral_port) -> (server_ip, server_port)
+	_, err := session.toServerConn.Write(data)
 	if err != nil {
 		log.Printf("Error forwarding to target for %s: %v", clientKey, err)
 	}
 }
 
-// handleTargetResponses reads responses from target and sends back to client
+// handleTargetResponses reads responses from target and sends back to client with reverse SNAT
 func (r *Relay) handleTargetResponses(session *ClientSession, clientKey string) {
 	buffer := make([]byte, r.bufferSize)
-	
-	// Create a connection back to the client
-	listenConn, err := net.ListenPacket("udp", "")
-	if err != nil {
-		log.Printf("Error creating response listener for %s: %v", clientKey, err)
-		return
-	}
-	defer listenConn.Close()
 
 	for {
-		session.conn.SetReadDeadline(time.Now().Add(r.timeout))
-		n, err := session.conn.Read(buffer)
+		session.toServerConn.SetReadDeadline(time.Now().Add(r.timeout))
+		n, err := session.toServerConn.Read(buffer)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				log.Printf("Session timeout: %s", clientKey)
@@ -216,8 +239,9 @@ func (r *Relay) handleTargetResponses(session *ClientSession, clientKey string) 
 		session.lastActive = time.Now()
 		session.mu.Unlock()
 
-		// Send response back to client
-		_, err = listenConn.WriteTo(buffer[:n], session.clientAddr)
+		// Reverse SNAT: Send back to client from our listen port
+		// Client sees: (relay_ip, listen_port) -> (client_ip, client_port)
+		_, err = session.toClientConn.Write(buffer[:n])
 		if err != nil {
 			log.Printf("Error sending to client %s: %v", clientKey, err)
 		}
@@ -230,7 +254,8 @@ func (r *Relay) closeSession(clientKey string) {
 	defer r.sessionsMu.Unlock()
 
 	if session, exists := r.sessions[clientKey]; exists {
-		session.conn.Close()
+		session.toServerConn.Close()
+		session.toClientConn.Close()
 		delete(r.sessions, clientKey)
 		log.Printf("Closed session: %s", clientKey)
 	}
@@ -247,7 +272,8 @@ func (r *Relay) cleanupSessions() {
 		for key, session := range r.sessions {
 			session.mu.Lock()
 			if now.Sub(session.lastActive) > r.timeout {
-				session.conn.Close()
+				session.toServerConn.Close()
+				session.toClientConn.Close()
 				delete(r.sessions, key)
 				log.Printf("Cleaned up expired session: %s", key)
 			}
@@ -299,24 +325,28 @@ func (r *Relay) migrateSessionsToNewTarget(newTarget *net.UDPAddr) {
 	for clientKey, session := range r.sessions {
 		session.mu.Lock()
 
-		// Close old connection
-		oldConn := session.conn
+		// Close old server connection
+		oldConn := session.toServerConn
 		oldConn.Close()
 
 		// Create new connection to new target
 		newConn, err := net.DialUDP("udp", nil, newTarget)
 		if err != nil {
 			log.Printf("[%s] Failed to migrate session %s: %v", r.listenAddr, clientKey, err)
-			// Remove failed session
+			// Also close client connection and remove session
+			session.toClientConn.Close()
 			delete(r.sessions, clientKey)
 			session.mu.Unlock()
 			continue
 		}
 
 		// Update session with new connection
-		session.conn = newConn
+		session.toServerConn = newConn
 		session.mu.Unlock()
 
 		log.Printf("[%s] Migrated session: %s", r.listenAddr, clientKey)
+		
+		// Restart response handler for new connection
+		go r.handleTargetResponses(session, clientKey)
 	}
 }

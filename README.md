@@ -40,7 +40,7 @@ The project code went from hand-written, to AI refactored and enhanced with manu
 ### Minimum Hardware
 - **CPU**: 1 vCPU
 - **RAM**: 512 MB (1 GB recommended)
-- **Disk**: 1 GB (5-10 GB total VPS size including OS and any desired logs)
+- **Disk**: 1 GB for relay application (recommend 5-10 GB total VPS including OS)
 
 ### Network
 - **Bandwidth**: Depends on usage (relay forwards all VPN traffic 1:1)
@@ -71,17 +71,17 @@ ENDPOINT_PORT=58120
 
 4. Start the relay:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 5. View logs:
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 6. Stop the relay:
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## Configuration
@@ -308,10 +308,10 @@ This single configuration change typically provides a 3-5x throughput improvemen
 ## Architecture
 
 ```
-Clients              Relay Server           WireGuard Server
--------              ------------           ----------------
-Client A:51820  -->  :51820 (listening) --> endpoint:51820
-Client B:443  -->  :443 (listening) --> endpoint:51820
+Clients              Relay Server                 WireGuard Server
+-------              ------------                 ----------------
+Client A  -->  Relay:51820 (listening)  -->  endpoint:51820
+Client B  -->  Relay:443 (listening)    -->  endpoint:51820
 ```
 
 ## Performance
@@ -336,7 +336,7 @@ Client B:443  -->  :443 (listening) --> endpoint:51820
 ### Container won't start
 - Check that `.env` file exists and is properly configured
 - Verify ports are not already in use: `sudo netstat -tulpn | grep <port>`
-- Check logs: `docker-compose logs`
+- Check logs: `docker compose logs`
 
 ### Ports not accessible
 - Ensure `network_mode: host` is set in docker-compose.yml

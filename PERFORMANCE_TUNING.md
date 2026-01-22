@@ -204,7 +204,7 @@ Testing from Puerto Vallarta, Mexico → California Relay → Singapore Server:
 
 **Minimum Required Tuning:**
 1. Apply UDP buffer tuning to relay VPS (10 minutes, persists forever)
-2. Restart relay Docker container
+2. Restart relay: `docker compose restart`
 
 **Expected Result:**
 - 3-5x throughput improvement

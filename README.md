@@ -335,14 +335,16 @@ For optimal throughput (200-300+ Mbps), system-level tuning is required. **See t
 **10-minute setup:**
 ```bash
 # On relay VPS only
-sudo tee -a /etc/sysctl.conf << EOF
-net.core.rmem_max=134217728
-net.core.wmem_max=134217728
-net.core.rmem_default=134217728
-net.core.wmem_default=134217728
-net.core.netdev_max_backlog=30000
+sudo tee /etc/sysctl.d/99-network-tuning.conf << EOF
+# Increase socket buffer sizes for better network performance
+net.core.rmem_max = 134217728
+net.core.wmem_max = 134217728
+net.core.rmem_default = 134217728
+net.core.wmem_default = 134217728
+net.core.netdev_max_backlog = 30000
 EOF
-sudo sysctl -p
+
+sudo sysctl -p /etc/sysctl.d/99-network-tuning.conf
 docker compose restart
 ```
 

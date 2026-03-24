@@ -35,6 +35,31 @@ The project code went from hand-written, to AI refactored and enhanced with manu
 - Optimize routing paths for better performance
 - Support multiple WireGuard clients on different ports
 
+## Why Not Just Use socat?
+
+A simple `socat` one-liner can relay UDP packets:
+
+```bash
+socat -T15 udp-recvfrom:34666,reuseaddr,fork udp-sendto:203.0.113.10:34666
+```
+
+If your WireGuard server has a **static IP**, this works fine and you may not need this project. However, wg-udp-relay was built for a harder problem: **home-based WireGuard servers on residential ISPs with dynamic IPs**.
+
+| Capability | socat | wg-udp-relay |
+|------------|-------|--------------|
+| Basic UDP relay | Yes | Yes |
+| DDNS hostname monitoring | No — resolves once at start, breaks when IP changes | Yes — periodic re-resolution with configurable interval |
+| Session migration on IP change | No — active tunnels die | Yes — seamless migration to new IP |
+| Multi-port listening | One port per instance | Multiple ports in a single process (e.g., 51820 + 443) |
+| Port 443/UDP (QUIC mimicry) | Requires separate instance | Built-in via comma-separated port list |
+| Connection tracking | Fork per connection (OS process) | Goroutines with session state |
+| Docker deployment | Manual setup | Docker Compose with `.env` configuration |
+| Configuration | Command-line only | Environment variables + command-line flags |
+
+**Use socat when:** Your WireGuard server has a static IP and you only need one listen port. It's simpler and already installed on most Linux systems.
+
+**Use wg-udp-relay when:** Your WireGuard server is behind a residential ISP with a dynamic IP (DDNS), you want multi-port listening to bypass port restrictions, or you need unattended operation that survives endpoint IP changes.
+
 ## Hardware Requirements
 
 ### Budget Option (Good Performance)

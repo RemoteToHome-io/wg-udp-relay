@@ -2,6 +2,8 @@
 
 A lightweight, high-performance UDP relay server designed for WireGuard VPN tunnels used **in self-hosted VPN setups**. This tool is specifically designed to help with personal (often home-based) VPN router setups that may have a VPN server hosted on a residential ISP with a dynamic home IP address (**e.g. self-hosted VPNs using GL.iNet routers**).  It helps route WireGuard packets through intermediate servers, useful for bypassing restrictive networks or optimizing routing paths, especially from travel countries that may have poor international connection paths to your VPN server host country.
 
+While the relay was designed with WireGuard in mind, it functions the same for any UDP-based VPN tunnel.  This can be used with WireGuard, Amenezia WireGuard (v1 or v2), OpenVPN UDP, Hysteria2, etc.
+
 **Important security note:**
 
 This type of relay does not have the ability to decrypt or modify the WireGuard VPN tunnel traffic (it does not have access to the client/server decryption keys).  It simply allows you to "bounce" the tunnel via a public server to assist with international routing performance or bypass endpoint restrictions.  This relay also features the ability to listen on multiple ports, so you could send your VPN client traffic on ports such as 443/UDP to make it appear more like HTTPS/3 QUIC UDP traffic, which can help bypass port restrictions and some types of throttling on a remote travel network.

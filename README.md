@@ -110,7 +110,7 @@ Testing from: Puerto Vallarta, Mexico → California Relay → Singapore Server.
 - **Budget option:** Nanode 1GB ($5/mo) - still 2x+ faster than direct connection
 - **Skip:** Dedicated CPU plans unless you need guaranteed >350 Mbps or serve 20+ users
 
-**Critical:** Buffer tuning (10 minutes, free) is required regardless of plan. An untuned $36 dedicated instance performs worse than a tuned $5 Nanode.
+**Critical:** Buffer tuning is required regardless of plan. An untuned $36 dedicated instance performs worse than a tuned $5 Nanode.
 
 ### Geographic Location
 Choose a VPS location between your travel destinations and home server for optimal routing performance.

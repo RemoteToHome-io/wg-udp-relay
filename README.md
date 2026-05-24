@@ -88,6 +88,8 @@ take advantage of Akamai's global high-speed CDN backbone for international tran
 - Value: ++
 
 ### Real-World Testing Results
+Example chosen using endpoints that had poor direct international transit routing between the local ISP and the international server location: MX to Singapore.  In this case we were able to obtain a 300%+ performance increase for a customer simply by relaying the traffic to a location that does have solid local routing (California), and taking advantage of Akamai's global CDN backbone.
+
 Testing from: Puerto Vallarta, Mexico → California Relay → Singapore Server.  ~16,100 km / 10,000 miles (close to half-way around the world)
 
 **Nanode 1GB ($5/mo):**
@@ -114,7 +116,7 @@ Testing from: Puerto Vallarta, Mexico → California Relay → Singapore Server.
 **Critical:** Buffer tuning is required regardless of plan. An untuned $36 dedicated instance performs worse than a tuned $5 Nanode.
 
 ### Geographic Location
-Choose a VPS location between your travel destinations and home server for optimal routing performance.
+Choose a VPS location between your travel destinations and home server for optimal routing performance. (More nuance to this coming soon via blog post.)
 
 ## Quick Start with Docker Compose
 

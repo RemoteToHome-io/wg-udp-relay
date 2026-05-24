@@ -89,7 +89,7 @@ take advantage of Akamai's global high-speed CDN backbone for international tran
 - Value: ++
 
 ### Real-World Testing Results
-Puerto Vallarta, Mexico → California Relay → Singapore Server
+Testing from: Puerto Vallarta, Mexico → California Relay → Singapore Server.  ~16,100 km / 10,000 miles (half-way around the world)
 
 **Nanode 1GB ($5/mo):**
 - Average: 215 Mbps down / 125 Mbps up

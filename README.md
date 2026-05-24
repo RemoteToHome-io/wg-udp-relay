@@ -239,7 +239,7 @@ PersistentKeepalive = 25
 - Keep the same `PublicKey`, `PrivateKey`, and `Address` values
 - Only change the `Endpoint` field
 - No changes needed on the WireGuard server itself
-- **The relay is NOT transparent**: The WireGuard server will see all connections from the relay's IP address, not individual client IPs
+- **The relay is NOT transparent**: The WireGuard server will see the connections from the relay's IP address, not individual client IPs. This still maintains the server IP as the final endpoint, but it would be important to note if you have inbound IP restrictions on your existing server.
 - The relay performs SNAT (Source NAT) to ensure WireGuard handshakes complete successfully
 - End-to-end encryption is maintained - the relay cannot decrypt WireGuard traffic
 

@@ -61,6 +61,8 @@ If your WireGuard server has a **static IP**, this works fine and you may not ne
 **Use wg-udp-relay when:** Your WireGuard server is behind a residential ISP with a dynamic IP (DDNS), you want multi-port listening to bypass port restrictions, or you need unattended operation that survives endpoint IP changes.
 
 ## Hardware Requirements
+We're using our Linode VPS examples below as a point of reference.  Any VPS provider can work, but we prefer Linode for relays as your VPS will be able to
+utilize Akamai's global high-speed CDN backbone for international transit.  You can find our Linode referral link [here](https://www.linode.com/lp/refer/?r=8f703f20c2a0f478c510ed4bafd1ccaad4b8163b0 for a $100 credit when signing up a new account.
 
 ### Budget Option (Good Performance)
 **Nanode 1GB** ($5/month):

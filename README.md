@@ -52,7 +52,7 @@ If your WireGuard server has a **static IP**, this works fine and you may not ne
 | Session migration on IP change | No — active tunnels die | Yes — seamless migration to new IP |
 | Multi-port listening | One port per instance | Multiple ports in a single process (e.g., 51820 + 443) |
 | Port 443/UDP (QUIC mimicry) | Requires separate instance | Built-in via comma-separated port list |
-| Connection tracking | Fork per connection (OS process) | Goroutines with session state |
+| Connection tracking | Fork per connection (OS process) | Go routines with session state |
 | Docker deployment | Manual setup | Docker Compose with `.env` configuration |
 | Configuration | Command-line only | Environment variables + command-line flags |
 

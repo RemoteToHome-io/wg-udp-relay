@@ -4,7 +4,7 @@
 
 By default, Linux systems have UDP receive buffers that are too small for high-throughput WireGuard relay operations. Without tuning, you may experience:
 - Packet loss (1-5%)
-- Poor TCP performance through the tunnel
+- Poor encapsulated TCP performance through the tunnel
 - Throughput limited to 30-60 Mbps even on gigabit connections
 
 With proper relay tuning, you can achieve 200-300+ Mbps throughput with zero packet loss.

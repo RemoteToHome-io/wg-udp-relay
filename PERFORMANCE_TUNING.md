@@ -90,7 +90,7 @@ sysctl -p
 
 **GL.iNet Router Considerations:**
 - Buffer sizes are smaller (8 MB) due to limited RAM (256MB-1GB typical)
-- Still provides significant improvement over defaults
+- Still provides minimal improvement over defaults
 - Persists across reboots
 - Router CPU becomes bottleneck before network at ~100-200 Mbps
 

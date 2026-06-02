@@ -42,7 +42,7 @@ A simple `socat` one-liner can relay UDP packets:
 socat -T15 udp-recvfrom:34666,reuseaddr,fork udp-sendto:203.0.113.10:34666
 ```
 
-If your WireGuard server has a **static IP**, this works fine and you may not need this project. However, wg-udp-relay was built for a harder problem: **home-based WireGuard servers on residential ISPs with dynamic IPs**.
+If your VPN endpoint server has a **static IP**, this works fine and you may not need this project. However, wg-udp-relay was built for a harder problem: **home-based VPN servers on residential ISPs with dynamic IPs**.
 
 | Capability | socat | wg-udp-relay |
 |------------|-------|--------------|

@@ -6,7 +6,7 @@ While the relay was designed with WireGuard in mind, it functions the same for *
 
 **Important security note:**
 
-This type of relay intentionally does not have the ability to decrypt or modify the VPN tunnel traffic (it does not have access to the client/server decryption keys) so you do not have to expose your unencrypted data steam to the cloud. It simply allows you to "bounce" the encrypted tunnel via a public server to assist with international routing performance or bypass endpoint restrictions.  This relay also features the ability to listen on multiple ports on the intermediate relay server and then forward to a different endpoint server port, so you could send your VPN client traffic on ports such as 443/UDP to make it appear more like HTTPS/3 QUIC UDP traffic or 3478/UDP for STUN/TURN, which can help bypass port restrictions and some types of throttling on a local travel/client network.
+This type of relay intentionally does not have the ability to decrypt or modify the VPN tunnel traffic (it does not have access to the client/server decryption keys) so you do not have to expose your unencrypted data stream to the cloud. It simply allows you to "bounce" the encrypted tunnel via a public server to assist with international routing performance or bypass endpoint restrictions.  This relay also features the ability to listen on multiple ports on the intermediate relay server and then forward to a different endpoint server port, so you could send your VPN client traffic on ports such as 443/UDP to make it appear more like HTTPS/3 QUIC UDP traffic or 3478/UDP for STUN/TURN, which can help bypass port restrictions and some types of throttling on a local travel/client network.
 
 ## To-do / coming soon:
 - Anycast routing - explore adding Anycast support with Vultr or DigitalOcean
@@ -51,7 +51,7 @@ If your VPN endpoint server has a **static IP**, this works fine and you may not
 | Session migration on IP change | No — active tunnels die | Yes — seamless migration to new IP |
 | Multi-port listening | One port per instance | Multiple ports in a single process (e.g., 51820 + 443) |
 | Port 443/UDP (QUIC mimicry) | Requires separate instance | Built-in via comma-separated port list |
-| Connection tracking | Fork per connection (OS process) | Go routines with session state |
+| Connection tracking | Fork per connection (OS process) | Goroutines with session state |
 | Docker deployment | Manual setup | Docker Compose with `.env` configuration |
 | Configuration | Command-line only | Environment variables + command-line flags |
 
@@ -124,6 +124,7 @@ Choose a VPS location between your travel destinations and home server for optim
 
 1. Clone the repository:
 ```bash
+cd /opt
 git clone https://github.com/RemoteToHome-io/wg-udp-relay.git
 cd wg-udp-relay
 ```
@@ -276,6 +277,7 @@ Requirements:
 - Go 1.20 or later
 
 ```bash
+cd /opt
 git clone https://github.com/RemoteToHome-io/wg-udp-relay.git
 cd wg-udp-relay
 go build -o wg-udp-relay

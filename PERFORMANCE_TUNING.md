@@ -20,7 +20,7 @@ The relay VPS is the **only component that requires tuning** for optimal perform
 SSH into your relay VPS and run:
 ```bash
 # Increase UDP buffer sizes to 128 MB
-sudo tee -a /etc/sysctl.conf << EOF
+sudo tee /etc/sysctl.d/99-network-tuning.conf << EOF
 net.core.rmem_max=134217728
 net.core.wmem_max=134217728
 net.core.rmem_default=134217728
@@ -29,8 +29,10 @@ net.core.netdev_max_backlog=30000
 EOF
 
 # Apply immediately
-sudo sysctl -p
+sudo sysctl -p /etc/sysctl.d/99-network-tuning.conf
 ```
+
+**Note:** Use a file in `/etc/sysctl.d/` as shown, not `/etc/sysctl.conf`. Some newer distributions no longer read `/etc/sysctl.conf` at boot, so tuning added there is lost on the next reboot.
 
 ### Verify Tuning
 ```bash
@@ -53,14 +55,14 @@ These settings allow the relay to buffer incoming packets during traffic bursts,
 
 If you still want to tune your WireGuard server (Linux VPS or system with root access):
 ```bash
-sudo tee -a /etc/sysctl.conf << EOF
+sudo tee /etc/sysctl.d/99-network-tuning.conf << EOF
 net.core.rmem_max=67108864
 net.core.wmem_max=67108864
 net.core.rmem_default=67108864
 net.core.wmem_default=67108864
 EOF
 
-sudo sysctl -p
+sudo sysctl -p /etc/sysctl.d/99-network-tuning.conf
 ```
 
 **Note:** Use 64 MB (half the relay buffer size) as the server typically handles less concurrent traffic than the relay.
@@ -177,6 +179,7 @@ Puerto Vallarta, Mexico → California Relay → Singapore Server
 ### Check for Packet Loss
 ```bash
 # On relay VPS - check for receive buffer errors
+# (if netstat is not found: sudo apt install net-tools)
 netstat -su | grep -i "receive buffer errors"
 
 # Run this before and during a speed test
@@ -226,7 +229,7 @@ Run a speedtest through the tunnel from a device connected to the client GL.iNet
 # Check current buffer sizes
 sysctl net.core.rmem_max
 
-# Check for buffer errors
+# Check for buffer errors (netstat is in the net-tools package)
 netstat -su | grep "receive buffer errors"
 
 # Restart relay after tuning

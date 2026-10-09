@@ -412,7 +412,7 @@ Client B  -->  Relay:443 (listening)    -->  endpoint:51820
 
 ### Container won't start
 - Check that `.env` file exists and is properly configured
-- Verify ports are not already in use: `sudo netstat -tulpn | grep <port>`
+- Verify ports are not already in use: `sudo netstat -tulpn | grep <port>` (if `netstat` is not found, install it with `sudo apt install net-tools`)
 - Check logs: `docker compose logs`
 
 ### Ports not accessible

@@ -147,12 +147,14 @@ ENDPOINT_PORT=58120
 docker compose up -d
 ```
 
-5. View logs:
+5. Apply the relay performance tuning (required for full throughput) — see [Performance Optimization](#performance-optimization).
+
+6. View logs:
 ```bash
 docker compose logs -f
 ```
 
-6. Stop the relay:
+7. Stop the relay:
 ```bash
 docker compose down
 ```

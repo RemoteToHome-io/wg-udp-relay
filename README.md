@@ -424,7 +424,11 @@ Client B  -->  Relay:443 (listening)    -->  endpoint:51820
 
 ### Connection issues
 - Verify ENDPOINT_DDNS resolves correctly: `nslookup <domain>`
-- Check that target endpoint is reachable: `nc -zvu <endpoint> <port>`
+- Check the relay logs while a client is trying to connect: `docker compose logs | grep -E "New session|Session timeout|Error reading from target"`
+  - `Session timeout` about 3 minutes after each `New session`, repeating while the client keeps retrying: the endpoint never answered the relay.
+  - `Error reading from target ... connection refused` right after each `New session`: the endpoint rejected that port.
+  - Either way, compare `ENDPOINT_DDNS` and `ENDPOINT_PORT` with the endpoint that works when the client connects directly. A mistyped port produces exactly these symptoms.
+  - Don't use `nc -zvu` to test the endpoint: it reports success even when nothing is listening on that UDP port.
 - Review relay logs for error messages
 - Check for DNS change detection messages in logs
 

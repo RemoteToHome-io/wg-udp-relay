@@ -181,7 +181,7 @@ The `docker-compose.yml` file uses `network_mode: host` to allow the container t
 
 ## WireGuard Client Configuration
 
-To use the relay, you need to update your WireGuard client configuration to point to the relay server instead of connecting directly to your WireGuard endpoint.
+To use the relay, you need to update your WireGuard client configuration to point to the relay server instead of connecting directly to your WireGuard endpoint.  We suggest copying your existing config profile to a new one with the just the change and giving it a clear name so it's easy to switch between the original and relay profiles.
 
 ### Scenario
 
@@ -224,7 +224,7 @@ PersistentKeepalive = 25
 1. **Endpoint hostname**: Changed from `xxxxxxx.glddns.com` to `relay-vps.example.com` (your relay VPS)
 2. **Endpoint port**: Changed from `58120` to `443` (the port your relay is listening on)
 
-(OPTIONAL: As a QUICK TEST workaround without editing your VPN client profiles, you can simply edit the router's Hosts file to temporarily hard-code your glddns.com url with the static IP of your relay.
+(**OPTIONAL**: As a "quick test" workaround on a GL.iNet router without editing your VPN client profiles, you can simply edit the router's Hosts file to temporarily hard-code your glddns.com url with the static IP of your relay.
 This will override the DDNS IP with your relay's IP.  See [this DDNS Quick Fix post](https://remotetohome.io/blog/vpn-troubleshooting-ddns-failure-quick-fix/#ddns-quick-fix) for an example of where to edit.)
 
 ### Why This Works

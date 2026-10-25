@@ -224,6 +224,9 @@ PersistentKeepalive = 25
 1. **Endpoint hostname**: Changed from `xxxxxxx.glddns.com` to `relay-vps.example.com` (your relay VPS)
 2. **Endpoint port**: Changed from `58120` to `443` (the port your relay is listening on)
 
+(OPTIONAL: As a QUICK TEST workaround without editing your VPN client profiles, you can simply edit the router's Hosts file to temporarily hard-code your glddns.com url with the static IP of your relay.
+This will override the DDNS IP with your relay's IP.  See [this DDNS Quick Fix post](https://remotetohome.io/blog/vpn-troubleshooting-ddns-failure-quick-fix/#ddns-quick-fix) for an example of where to edit.)
+
 ### Why This Works
 
 - The relay receives packets on port `443/UDP`

@@ -186,7 +186,7 @@ To use the relay, you need to update your WireGuard client configuration to poin
 ### Scenario
 
 - **Original WireGuard Server**: `xxxxxxx.glddns.com:58120`
-- **Relay VPS**: `relay-vps.example.com` (or VPS IP address)
+- **Relay VPS**: `relay-vps.example.com` (or the relay VPS IP address)
 - **Relay Listen Port**: `443` (use HTTPS/3 QUIC UDP port to bypass restrictions)
 
 ### Configuration Change
@@ -221,11 +221,11 @@ PersistentKeepalive = 25
 
 ### What Changed?
 
-1. **Endpoint hostname**: Changed from `xxxxxxx.glddns.com` to `relay-vps.example.com` (your relay VPS)
+1. **Endpoint hostname**: Changed from `xxxxxxx.glddns.com` to `relay-vps.example.com` (or the relay VPS IP address)
 2. **Endpoint port**: Changed from `58120` to `443` (the port your relay is listening on)
 
-(**OPTIONAL**: As a "quick test" workaround on a GL.iNet router without editing your VPN client profiles, you can simply edit the router's Hosts file to temporarily hard-code your glddns.com url with the static IP of your relay.
-This will override the DDNS IP with your relay's IP.  See [this DDNS Quick Fix post](https://remotetohome.io/blog/vpn-troubleshooting-ddns-failure-quick-fix/#ddns-quick-fix) for an example of where to edit.)
+**OPTIONAL**: As a "quick test" workaround on a GL.iNet router without editing your VPN client profiles, you can simply edit the router's Hosts file to temporarily hard-code your glddns.com url with the static IP of your relay.
+This will override the DDNS IP with your relay's IP.  See this [DDNS Quick Fix](https://remotetohome.io/blog/vpn-troubleshooting-ddns-failure-quick-fix/#ddns-quick-fix) post for an example of where to edit. NOTE: This will only work if you also have your relay listening on the same port as the original server endpoint.
 
 ### Why This Works
 
